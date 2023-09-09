@@ -29,7 +29,7 @@ def connect_to_router(router):
 
 
 # Baca nilai dari file YAML
-with open("config.yml", "r") as config_file:
+with open("param.yml", "r") as config_file:
     config_data = yaml.safe_load(config_file)
 
 # Muat template Jinja2
