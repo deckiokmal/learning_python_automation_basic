@@ -1,14 +1,2 @@
-# Konfigurasi Router MikroTik
-/interface ethernet
-set [ find default-name=ether1 ] name=WAN
-set [ find default-name=ether2 ] name=LAN
-
-/ip address
-add address={{ wan_ip }}/24 interface=WAN network={{ wan_ip }}/24
-add address={{ lan_ip }}/24 interface=LAN network={{ lan_ip }}/24
-
-/ip route
-add distance=1 gateway={{ wan_gateway }}
-
-/system identity
-set name={{ router_name }}
+/system/identity/set name={{ router_name }}
+/system/identity/print

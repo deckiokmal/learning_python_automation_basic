@@ -13,17 +13,19 @@ template = env.get_template("template.j2")
 # Render template dengan data dari YAML
 output = template.render(config_data)
 
+# print(output)
+
 # paramiko membuat koneksi SSH
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 # Parameter Perangkat yang akan diremote
-router_ip = "192.168.88.1"
+router_ip = "182.23.107.170"
 user = "cperooot"
 password = "N4sional"
 
 # terhubung ke perangkat
-ssh_client.connect(router_ip, username=user, password=password, port=22)
+ssh_client.connect(router_ip, username=user, password=password, port=3232)
 
 # Perintah yang akan dikirimkan
 command = output
@@ -34,7 +36,7 @@ stdin, stdout, stderr = ssh_client.exec_command(command)
 # menampilkan output (stdout) atau tangani pesan error (stderr)
 print(stdout.read().decode())
 
-#tutup koneksi ssh
+# tutup koneksi ssh
 ssh_client.close()
 
 print("Konfiguration completed!")
