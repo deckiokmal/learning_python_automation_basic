@@ -1,0 +1,1410 @@
+config system virtual-switch
+    edit "lan"
+        set physical-switch "sw0"
+        config port
+            delete "lan1"
+            delete "lan2"
+            delete "lan3"
+            next
+        end
+    next
+end
+
+config system interface
+    edit {{ wan1_interface }}
+        set vdom "root"
+        set ip {{ wan1_ip }}
+        set allowaccess ping https ssh snmp
+        set type physical
+        set monitor-bandwidth enable
+        set role wan
+    next
+    edit {{ wan2_interface }}
+        set vdom "root"
+        set ip {{ wan2_ip }}
+        set allowaccess ping https ssh snmp
+        set type physical
+        set monitor-bandwidth enable
+        set role wan
+    next
+    edit {{ loopback_interface }}
+        set vdom "root"
+        set ip {{ loopback_ip }}
+        set allowaccess ping telnet ssh snmp
+        set type loopback
+    next
+    edit "lan"
+        set vdom "root"
+        set ip 10.0.0.1 255.255.255.252
+        set allowaccess ping https ssh snmp http fgfm fabric
+        set type hard-switch
+        set alias "TO-LAN_SW ARUBA"
+        set stp enable
+        set role lan
+    next
+end
+
+config router static
+    edit 1
+        set gateway 103.169.21.33
+        set device "wan"
+        set comment "GW INTERNET VIA LA"
+    next
+    edit 7
+        set dst 192.168.3.0 255.255.255.0
+        set device "wan.aws"
+        set comment "AWS MBS"
+    next
+    edit 8
+        set dst 192.168.0.0 255.255.0.0
+        set distance 254
+        set comment "BLACKHOLE-CLASS-C"
+        set blackhole enable
+    next
+    edit 11
+        set dst 180.250.13.26 255.255.255.255
+        set device "lan3"
+        set comment "DNS-IH-1"
+        set dynamic-gateway enable
+    next
+    edit 13
+        set dst 180.250.13.30 255.255.255.255
+        set device "lan3"
+        set comment "DNS-IH-2"
+        set dynamic-gateway enable
+    next
+    edit 14
+        set dst 10.212.134.0 255.255.255.0
+        set distance 245
+        set comment "SSL-VPN"
+        set blackhole enable
+    next
+    edit 19
+        set dst 8.8.8.8 255.255.255.255
+        set device "lan3"
+        set comment "DNS-GOOGLE"
+        set dynamic-gateway enable
+    next
+    edit 30
+        set dst 10.0.0.0 255.0.0.0
+        set distance 254
+        set comment "CLASS-A-BLACKHOLE"
+        set blackhole enable
+    next
+    edit 31
+        set dst 172.16.0.0 255.240.0.0
+        set distance 254
+        set comment "CLASS-B-BLACKHOLE"
+        set blackhole enable
+    next
+    edit 15
+        set dst 202.152.49.32 255.255.255.224
+        set gateway 1.11.13.61
+        set device "lan1"
+        set comment "PRTG-LA"
+    next
+    edit 16
+        set dst 123.231.139.128 255.255.255.224
+        set gateway 1.11.13.61
+        set device "lan1"
+        set comment "BASTION-HOST-LA"
+    next
+    edit 18
+        set gateway 192.168.100.1
+        set device "lan3"
+        set comment "GW INTERNET VIA IH"
+    next
+    edit 17
+        set dst 192.168.13.0 255.255.255.0
+        set device "AWS.RKI"
+        set comment "AWS RKI"
+    next
+    edit 20
+        set gateway 103.169.21.33
+        set device "wan"
+        set comment "FORTIGUARD"
+        set dstaddr "fortiguard_service"
+    next
+    edit 21
+        set dst 208.91.112.220 255.255.255.255
+        set gateway 103.169.21.33
+        set distance 1
+        set device "wan"
+        set comment "FORTIGUARD"
+    next
+end
+
+config system dns
+    set primary 208.91.112.53
+    set secondary 208.91.112.52
+end
+
+config vpn ipsec phase1-interface
+    edit "wan.aws"
+        set interface "wan"
+        set local-gw 103.169.21.34
+        set keylife 28800
+        set peertype any
+        set net-device disable
+        set proposal aes128-sha1
+        set dpd on-idle
+        set comments "AWS MBS GROUP"
+        set dhgrp 2
+        set nattraversal disable
+        set remote-gw 52.221.7.164
+        set psksecret ENC O0hW0bsU1exTxQMCWBE/5k7QbudM77vDAU7QBgyyh0swcYiTVhj7IUXq8fa4360UtwnoFZSsOYxiPdeNqGcD/qZChls90cNuvTw7f1F/tsUNUefA68JQOiVwZcKuOIrhw78t/jqc5ZTwae+JSCXrBPshxYLQau6K3tcbUNljbisyW+m++ABH+wQR+MjEF1uHpeIjKw==
+        set dpd-retryinterval 10
+    next
+    edit "JMB-LA"
+        set type dynamic
+        set interface "wan"
+        set local-gw 103.169.21.34
+        set mode aggressive
+        set peertype one
+        set net-device disable
+        set proposal aes192-sha256
+        set add-route disable
+        set dpd on-idle
+        set dhgrp 5
+        set auto-discovery-sender enable
+        set peerid "jmb-la"
+        set tunnel-search nexthop
+        set psksecret ENC UiOd+RIzP16nrQPdwMFF5pP85xLK3/Ou113ttHUe9ZhLe5Y2rnYb6Qvt+Qlm2l+I6ZzBU8pZigwmt8Z+MhxP0FzEQG6S9ii1sKTsY6HOIOOjhP6hZChKDJJkvQZp8Uq8qaEBcq7s1224Xt5KwDrTb4TO7EkbXlGobXJWUNGGxaXNj33Lu84zazv4SKGN2hzcLIRpJw==
+        set dpd-retryinterval 10
+    next
+    edit "JMB-IH"
+        set type dynamic
+        set interface "wan"
+        set local-gw 103.169.21.34
+        set mode aggressive
+        set peertype one
+        set net-device disable
+        set proposal aes192-sha256
+        set add-route disable
+        set dpd on-idle
+        set dhgrp 5
+        set auto-discovery-sender enable
+        set peerid "jmb-ih"
+        set tunnel-search nexthop
+        set psksecret ENC JL2z1DaAzY1Ny/Ytfl2cLQ1TKIMO5tnDArbhi1Zu/DHHYPVPK+P2Jnp1QnbaezyOljD6QVXapIsDu49p2eRm6Ozz8KWC9DlmRTIhJPMtlOAi7LV93TF3TvwWp65gNOa8reuK9s2kJHKMh6AVlRf+hJbicnjCMoZ0I8NtkdIsnJjOC0Mb5KIsEWecc303veDb4eLI2w==
+        set dpd-retryinterval 10
+    next
+    edit "BKS-LA"
+        set interface "wan"
+        set peertype any
+        set net-device enable
+        set proposal aes128-sha256
+        set dhgrp 5
+        set remote-gw 202.152.52.2
+        set psksecret ENC 3XIc7a6cSum9UKZIiYO5eh5u++9CLaS262qr7L4vFY3Ti4m8W6KH5eFGN8Zw6bsgtFvsb62AnMc8wY3sUU9E5C/kRCLEt/Iy4sZWR9v+HMHTXSlPSpJrS7KgX7O5mdwpTD02cgg+Ij6WrBVZp7SkkkHSIWzsqgE2dprI0XMVhvx582XvRF+qZ59Z9LiaMhBDjUsvuw==
+        set dpd-retryinterval 10
+    next
+    edit "BKS-IH"
+        set type dynamic
+        set interface "wan"
+        set ike-version 2
+        set local-gw 103.169.21.34
+        set peertype any
+        set net-device disable
+        set mode-cfg enable
+        set proposal des-sha1
+        set add-route disable
+        set dpd on-idle
+        set dhgrp 2
+        set auto-discovery-sender enable
+        set network-overlay enable
+        set network-id 2
+        set tunnel-search nexthop
+        set ipv4-start-ip 169.254.254.17
+        set ipv4-end-ip 169.254.254.17
+        set ipv4-netmask 255.255.255.248
+        set psksecret ENC tEuO4fTnMgi1z/Cr4yeRYO62lqgbqzGW3mTfpcLmufmEC8rGQYZ9+0H2ENLC0AHNk1A/3YdYpYmKYkOTHV8sx8ykByfEioznRPhldXnsGQR/BmxSO3VZ0yZ0Fuez0Ly0TissQgKfnCrJl7fCs+PacwnUMbCQI2x9tUBnMATbCzbtC4knJY7U9HpC5nBw84B7BUTovA==
+        set dpd-retryinterval 21
+    next
+    edit "TO-BKS-IH"
+        set interface "lan3"
+        set ike-version 2
+        set peertype any
+        set net-device enable
+        set mode-cfg enable
+        set proposal des-sha1
+        set add-route disable
+        set dpd on-idle
+        set dhgrp 1
+        set idle-timeout enable
+        set auto-discovery-receiver enable
+        set network-overlay enable
+        set network-id 1
+        set remote-gw 202.152.52.2
+        set psksecret ENC UQhvlaQGFY62q0lxbcCtGJdtlPz8tKH7jiakBo87xR6jMIYz5tIxFKlPuQ+tL7OdGyEmWpcWFua0o87rURZvXsqwpVFeoW1DTGpXKrlFnuJ+tnirenPFGneuXoMaHaoYxablU0uD4Kr6q/nZYyUDmqoKaG1T9Bol5tfu+pjCrhCPgBeoJiZm/peagTR1R5NyhJaQhA==
+        set dpd-retryinterval 21
+    next
+    edit "AWS.RKI"
+        set interface "wan"
+        set local-gw 103.169.21.34
+        set keylife 28800
+        set peertype any
+        set net-device disable
+        set proposal aes128-sha1
+        set dpd on-idle
+        set comments "AWS RKI GROUP"
+        set dhgrp 2
+        set nattraversal disable
+        set remote-gw 13.228.110.63
+        set psksecret ENC lN36yCdMBWmCF3MgZhyZtrWTrV6S5Xa+oeK0hIs4JdvsmXn+vhO7T1TMM7by2v6dc/qzquwbLQ/wb+fI4akIkqR0lsTFquUKfgXCuC12D+/qB1LJJy79lFZaGqh+MlK+In1lObBhCoqPI4QIdFp5EklkZ8m12b8cm5OxXeWeUN5SI1dz80WRazurYL3mo7YjXVWW9Q==
+        set dpd-retryinterval 10
+    next
+end
+config vpn ipsec phase2-interface
+    edit "wan.aws"
+        set phase1name "wan.aws"
+        set proposal aes128-sha1
+        set dhgrp 2
+        set src-addr-type name
+        set dst-addr-type name
+        set keylifeseconds 3600
+        set src-name "all"
+        set dst-name "all"
+    next
+    edit "JMB-LA"
+        set phase1name "JMB-LA"
+        set proposal aes192-sha256
+        set dhgrp 5
+    next
+    edit "JMB-IH"
+        set phase1name "JMB-IH"
+        set proposal aes192-sha256
+        set dhgrp 5
+    next
+    edit "BKS-LA"
+        set phase1name "BKS-LA"
+        set proposal aes128-sha256
+        set dhgrp 5
+        set auto-negotiate enable
+    next
+    edit "BKS-IH"
+        set phase1name "BKS-IH"
+        set proposal des-sha1
+        set dhgrp 2
+        set keepalive enable
+    next
+    edit "TO-BKS-IH"
+        set phase1name "TO-BKS-IH"
+        set proposal des-sha1
+        set dhgrp 1
+        set keepalive enable
+    next
+    edit "AWS.RKI"
+        set phase1name "AWS.RKI"
+        set proposal aes128-sha1
+        set dhgrp 2
+        set auto-negotiate enable
+        set keylifeseconds 3600
+    next
+end
+
+config system interface
+    edit "JMB-LA"
+        set vdom "root"
+        set ip 169.254.100.254 255.255.255.255
+        set allowaccess ping telnet
+        set type tunnel
+        set remote-ip 169.254.100.253 255.255.255.0
+        # 12
+        set interface "wan"
+    next
+    edit "JMB-IH"
+        set vdom "root"
+        set ip 169.254.200.254 255.255.255.255
+        set allowaccess ping telnet
+        set type tunnel
+        set remote-ip 169.254.200.253 255.255.255.0
+        # 13
+        set interface "wan"
+    next
+    edit "BKS-LA"
+        set vdom "root"
+        set ip 169.254.254.1 255.255.255.255
+        set allowaccess ping telnet
+        set type tunnel
+        set remote-ip 169.254.254.2 255.255.255.255
+        # 14
+        set interface "wan"
+    next
+    edit "VLAN-TO-ARUBA"
+        set vdom "root"
+        set allowaccess ping https http
+        set status down
+        set device-identification enable
+        set role lan
+        # 17
+        set interface "lan"
+        set vlanid 101
+    next
+    edit "BKS-IH"
+        set vdom "root"
+        set ip 169.254.254.22 255.255.255.255
+        set allowaccess ping telnet
+        set type tunnel
+        set remote-ip 169.254.254.21 255.255.255.248
+        # 11
+        set interface "wan"
+    next
+    edit "TO-BKS-IH"
+        set vdom "root"
+        set allowaccess ping telnet
+        set type tunnel
+        # 15
+        set interface "lan3"
+    next
+    edit "AWS.RKI"
+        set vdom "root"
+        set ip 169.254.254.30 255.255.255.255
+        set allowaccess ping
+        set type tunnel
+        set remote-ip 169.254.254.29 255.255.255.252
+        # 16
+        set interface "wan"
+    next
+end
+
+config system sdwan
+    set status enable
+    config zone
+        edit "virtual-wan-link"
+        next
+        edit "upg-zone-wan.aws"
+        next
+        edit "upg-zone-lan3"
+        next
+        edit "upg-zone-wan"
+        next
+        edit "BKS-SDWAN"
+        next
+        edit "upg.zone.aws.rki"
+        next
+    end
+    config members
+        edit 1
+            set interface "wan.aws"
+            set zone "upg-zone-wan.aws"
+            set source 192.168.1.1
+        next
+        edit 3
+            set interface "lan3"
+            set zone "upg-zone-lan3"
+        next
+        edit 4
+            set interface "wan"
+            set zone "upg-zone-wan"
+            set gateway 103.169.21.33
+        next
+        edit 6
+            set interface "BKS-LA"
+            set zone "BKS-SDWAN"
+            set gateway 169.254.254.2
+            set source 192.168.1.1
+        next
+        edit 5
+            set interface "BKS-IH"
+            set zone "BKS-SDWAN"
+            set gateway 169.254.254.17
+            set source 192.168.1.1
+        next
+        edit 7
+            set interface "TO-BKS-IH"
+            set zone "BKS-SDWAN"
+            set gateway 169.254.254.14
+            set source 192.168.1.1
+        next
+        edit 8
+            set interface "AWS.RKI"
+            set zone "upg.zone.aws.rki"
+            set gateway 169.254.254.29
+            set source 192.168.1.1
+        next
+    end
+    config health-check
+        edit "SERVER AWS"
+            set server "192.168.3.55"
+            set update-static-route disable
+            set members 1
+            config sla
+                edit 1
+                    set latency-threshold 100
+                    set jitter-threshold 30
+                    set packetloss-threshold 5
+                next
+            end
+        next
+        edit "Oracle"
+            set server "192.168.3.58"
+            set members 1
+        next
+        edit "BACKUP_BEKASI"
+            set server "192.168.7.1"
+            set interval 1000
+            set update-static-route disable
+            set members 6 5 7
+            config sla
+                edit 1
+                    set latency-threshold 100
+                    set jitter-threshold 50
+                    set packetloss-threshold 1
+                next
+            end
+        next
+        edit "PUBLIC_AWS"
+            set server "52.221.7.164"
+            set update-static-route disable
+            set members 4
+        next
+        edit "Internet"
+            set server "www.google.com"
+            set members 3
+        next
+        edit "AWS.RKI"
+            set server "169.254.254.29"
+            set interval 1000
+            set update-static-route disable
+            set members 8
+            config sla
+                edit 1
+                    set latency-threshold 100
+                    set jitter-threshold 50
+                    set packetloss-threshold 1
+                next
+            end
+        next
+        edit "AWS RKI DEV SERVER"
+            set server "192.168.13.4"
+            set update-static-route disable
+            set members 8
+            config sla
+                edit 1
+                    set latency-threshold 100
+                    set jitter-threshold 50
+                    set packetloss-threshold 5
+                next
+            end
+        next
+        edit "DNS FORTIGUARD"
+            set server "208.91.112.220"
+            set update-static-route disable
+            set members 3 4
+            config sla
+                edit 1
+                    set latency-threshold 99
+                    set jitter-threshold 99
+                    set packetloss-threshold 5
+                next
+            end
+        next
+        edit "Internet 2"
+            set server "8.8.8.8"
+            set members 3
+        next
+    end
+    config service
+        edit 1
+            set name "AWS"
+            set mode sla
+            set dst "AWS"
+            set src "all"
+            config sla
+                edit "SERVER AWS"
+                    set id 1
+                next
+            end
+            set priority-members 1
+            set use-shortcut-sla disable
+        next
+        edit 7
+            set name "AWS-RKI"
+            set mode priority
+            set dst "aws_rki"
+            set src "all"
+            set health-check "AWS RKI DEV SERVER"
+            set priority-members 8
+            set use-shortcut-sla disable
+        next
+        edit 4
+            set name "RULES-TO-BEKASI"
+            set mode sla
+            set route-tag 65510123
+            set src "all"
+            config sla
+                edit "BACKUP_BEKASI"
+                    set id 1
+                next
+            end
+            set priority-members 6 5 7
+        next
+        edit 6
+            set name "FORTIGUARD"
+            set mode sla
+            set protocol 17
+            set start-port 53
+            set end-port 53
+            set dst "wildcard.fortiguard.net" "wildcard.fortinet.net" "DNS Fortiguard"
+            set src "all"
+            config sla
+                edit "DNS FORTIGUARD"
+                    set id 1
+                next
+            end
+            set priority-members 4 3
+        next
+        edit 9
+            set name "INTERNET_LA_PAJAK"
+            set dst "wildcard.efaktur.pajak.go.id" "wildcard.pajak.go.id" "wildcard.svc.efaktur.pajak.go.id"
+            set src "DC_JAMBI"
+            set priority-members 4 3
+            set use-shortcut-sla disable
+        next
+        edit 10
+            set name "INTERNET-LA-BCA"
+            set dst "wilcard.klikbca.com" "wilcard.bca.co.id"
+            set src "DC_JAMBI"
+            set priority-members 4 3
+            set use-shortcut-sla disable
+        next
+        edit 2
+            set name "INTERNET"
+            set dst "all"
+            set src "DC_JAMBI"
+            set priority-members 3
+            set use-shortcut-sla disable
+        next
+        edit 5
+            set name "INET-LA-ONLY-IT"
+            set dst "all"
+            set src "GROUP-IT"
+            set priority-members 4
+            set use-shortcut-sla disable
+        next
+        edit 8
+            set name "INET-LA-ONLY-USER"
+            set dst "all"
+            set src "DC_JAMBI"
+            set priority-members 4
+            set use-shortcut-sla disable
+        next
+    end
+end
+
+config router prefix-list
+    edit "PREFIX-TO-SPOKE"
+        config rule
+            edit 1
+                set prefix 192.168.1.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 5
+                set prefix 10.212.134.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 2
+                set prefix 192.168.3.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 3
+                set prefix 123.231.139.128 255.255.255.224
+                unset ge
+                unset le
+            next
+            edit 4
+                set prefix 202.152.49.32 255.255.255.224
+                unset ge
+                unset le
+            next
+            edit 6
+                set prefix 1.5.20.0 255.255.255.255
+                unset ge
+                unset le
+            next
+        end
+    next
+    edit "PREFIX-LAN"
+        config rule
+            edit 1
+                set prefix 192.168.1.0 255.255.255.0
+                unset ge
+                unset le
+            next
+        end
+    next
+    edit "PREFIX-TO-BEKASI"
+        config rule
+            edit 1
+                set prefix 192.168.1.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 5
+                set prefix 10.212.134.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 2
+                set prefix 192.168.3.0 255.255.255.0
+                unset ge
+                unset le
+            next
+            edit 3
+                set prefix 123.231.139.128 255.255.255.224
+                unset ge
+                unset le
+            next
+            edit 4
+                set prefix 202.152.49.32 255.255.255.224
+                unset ge
+                unset le
+            next
+            edit 6
+                set prefix 1.5.20.0 255.255.255.255
+                unset ge
+                unset le
+            next
+        end
+    next
+    edit "IP-LAN-BEKASI"
+        config rule
+            edit 1
+                set prefix 192.168.7.0 255.255.255.0
+                unset ge
+                unset le
+            next
+        end
+    next
+    edit "IP-LAN-JAMBI"
+        config rule
+            edit 1
+                set prefix 192.168.1.0 255.255.255.0
+                unset ge
+                unset le
+            next
+        end
+    next
+end
+config router community-list
+    edit "65510:123"
+        config rule
+            edit 1
+                set action permit
+                set match "65510:123"
+            next
+        end
+    next
+    edit "65510:456"
+        config rule
+            edit 1
+                set action permit
+                set match "65510:456"
+            next
+        end
+    next
+    edit "65510:888"
+        config rule
+            edit 1
+                set action permit
+                set match "65510:888"
+            next
+        end
+    next
+end
+config router route-map
+    edit "OUT-TO-ADVPN-SPOKE"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-TO-SPOKE"
+                set set-community "65510:456"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+            edit 20
+                set match-community "65510:456"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+        end
+    next
+    edit "OUT-TO-ADVPN-HUB-BKS"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-TO-SPOKE"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+        end
+    next
+    edit "IN-FROM-ADVPN-HUB-BKS"
+        config rule
+            edit 1
+                set match-community "65510:123"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-local-preference 99
+                unset set-originator-id
+                set set-route-tag 65510123
+            next
+        end
+    next
+    edit "OUT-TO-ADVPN-HUB-BKS-P2P"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-TO-BEKASI"
+                set set-community "65510:456"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+            edit 20
+                set match-community "65510:456"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+            edit 5
+                set match-ip-address "IP-LAN-JAMBI"
+                set set-community "65510:456" "65510:123"
+                set set-community-additive enable
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-metric 10
+                unset set-originator-id
+            next
+        end
+    next
+    edit "OUT-TO-PLB"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-LAN"
+                set set-community "65510:888"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-metric 10
+                unset set-originator-id
+            next
+        end
+    next
+    edit "IN-FROM-PLB"
+        config rule
+            edit 10
+                set match-community "65510:888"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-local-preference 99
+                unset set-originator-id
+                set set-route-tag 65510888
+            next
+        end
+    next
+    edit "OUT-TO-JKT"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-LAN"
+                set set-community "65510:888"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-metric 20
+                unset set-originator-id
+            next
+        end
+    next
+    edit "IN-FROM-JKT"
+        config rule
+            edit 10
+                set match-community "65510:888"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-local-preference 92
+                unset set-originator-id
+                set set-route-tag 65510888
+            next
+        end
+    next
+    edit "OUT-TO-BEKASI"
+        config rule
+            edit 10
+                set match-ip-address "PREFIX-LAN"
+                set set-community "65510:123"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+        end
+    next
+    edit "IN-FROM-BEKASI-IH"
+        config rule
+            edit 1
+                set match-community "65510:123"
+                set set-ip-nexthop 169.254.201.254
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+                set set-route-tag 65510123
+            next
+        end
+    next
+    edit "IN-FROM-BKS-IH"
+        config rule
+            edit 1
+                set match-community "65510:123"
+                set set-ip-nexthop 169.254.254.14
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                set set-local-preference 99
+                unset set-originator-id
+                set set-route-tag 65510123
+            next
+        end
+    next
+    edit "IN-FROM-ADVPN-SPOKE-JMB"
+        config rule
+            edit 20
+                set match-community "65510:456"
+                unset set-ip-nexthop
+                unset set-ip6-nexthop
+                unset set-ip6-nexthop-local
+                unset set-originator-id
+            next
+        end
+    next
+end
+
+config router bgp
+    set as 65510
+    set router-id 192.168.1.1
+    set ibgp-multipath enable
+    config aggregate-address
+        edit 1
+            set prefix 192.168.1.0 255.255.255.0
+        next
+    end
+    config neighbor
+        edit "169.254.254.2"
+            set remote-as 65510
+            set route-map-in "IN-FROM-ADVPN-HUB-BKS"
+            set route-map-out "OUT-TO-ADVPN-HUB-BKS-P2P"
+            set keep-alive-timer 4
+            set holdtime-timer 12
+        next
+        edit "169.254.254.14"
+            set remote-as 65510
+            set route-map-in "IN-FROM-BKS-IH"
+            set route-map-out "OUT-TO-ADVPN-HUB-BKS-P2P"
+            set keep-alive-timer 4
+            set holdtime-timer 12
+        next
+        edit "169.254.254.17"
+            set remote-as 65510
+            set route-map-in "IN-FROM-ADVPN-HUB-BKS"
+            set route-map-out "OUT-TO-ADVPN-HUB-BKS-P2P"
+            set keep-alive-timer 4
+            set holdtime-timer 12
+        next
+    end
+    config neighbor-group
+        edit "JMB-LA"
+            set link-down-failover enable
+            set next-hop-self enable
+            set remote-as 65510
+            set route-map-out "OUT-TO-ADVPN-SPOKE"
+            set keep-alive-timer 4
+            set holdtime-timer 12
+            set route-reflector-client enable
+        next
+        edit "JMB-IH"
+            set link-down-failover enable
+            set next-hop-self enable
+            set remote-as 65510
+            set route-map-out "OUT-TO-ADVPN-SPOKE"
+            set keep-alive-timer 4
+            set holdtime-timer 12
+            set route-reflector-client enable
+        next
+    end
+    config neighbor-range
+        edit 1
+            set prefix 169.254.100.0 255.255.255.0
+            set neighbor-group "JMB-LA"
+        next
+        edit 2
+            set prefix 169.254.200.0 255.255.255.0
+            set neighbor-group "JMB-IH"
+        next
+    end
+    config network
+        edit 1
+            set prefix 10.212.134.0 255.255.255.0
+        next
+        edit 2
+            set prefix 192.168.1.0 255.255.255.192
+        next
+        edit 3
+            set prefix 192.168.3.0 255.255.255.0
+        next
+        edit 4
+            set prefix 1.5.20.0 255.255.255.255
+        next
+        edit 5
+            set prefix 123.231.139.128 255.255.255.224
+        next
+        edit 6
+            set prefix 202.152.49.32 255.255.255.224
+        next
+        edit 7
+            set prefix 192.168.13.0 255.255.255.0
+        next
+    end
+    config redistribute "connected"
+    end
+    config redistribute "rip"
+    end
+    config redistribute "ospf"
+    end
+    config redistribute "static"
+    end
+    config redistribute "isis"
+    end
+    config redistribute6 "connected"
+    end
+    config redistribute6 "rip"
+    end
+    config redistribute6 "ospf"
+    end
+    config redistribute6 "static"
+    end
+    config redistribute6 "isis"
+    end
+end
+
+config router policy
+    edit 3
+        set input-device "JMB-LA"
+        set src "192.168.0.0/255.255.0.0"
+        set dst "192.168.0.0/255.255.0.0"
+        set output-device "JMB-LA"
+    next
+    edit 4
+        set input-device "JMB-IH"
+        set src "192.168.0.0/255.255.0.0"
+        set dst "192.168.0.0/255.255.0.0"
+        set output-device "JMB-IH"
+    next
+    edit 2
+        set input-device "lan" "IP SERVER_VL10" "IP_SERVER_VL30"
+        set srcaddr "all"
+        set gateway 36.77.64.1
+        set output-device "lan3"
+        set status disable
+    next
+end
+
+config firewall policy
+    edit 25
+        set name "SSL_TO_AWS"
+        set uuid 47adcec6-fbe1-51eb-a741-a2602022cf89
+        set srcintf "ssl.root"
+        set dstintf "upg-zone-wan.aws" "upg.zone.aws.rki"
+        set srcaddr "all"
+        set dstaddr "AWS" "aws_rki"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+        set groups "SSL-VPN"
+        set comments "SSLVPN-ALL_STORE)"
+    next
+    edit 26
+        set name "AWS_TO_SSL"
+        set uuid 66c89660-fbe1-51eb-0ba9-5358a570ef56
+        set srcintf "upg-zone-wan.aws" "upg.zone.aws.rki"
+        set dstintf "ssl.root"
+        set srcaddr "AWS" "aws_rki"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+        set comments " (Copy of SSLVPN-ALL_STORE) (Copy of SSL_TO_AWS) (Reverse of SSL_TO_AWS)"
+    next
+    edit 23
+        set name "INTERNAL_TO_AWS_MBS"
+        set uuid 74e82b8a-f9d3-51eb-47fb-cecb5e9c8c2b
+        set srcintf "any"
+        set dstintf "upg-zone-wan.aws"
+        set srcaddr "all"
+        set dstaddr "AWS"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 27
+        set name "AWS_MBS_TO_INTERNAL"
+        set uuid 91fc2dba-fe7a-51eb-914b-c596d43a7d64
+        set srcintf "upg-zone-wan.aws"
+        set dstintf "any"
+        set srcaddr "AWS"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+        set comments " (Copy of INTERNAL_TO_AWS)"
+    next
+    edit 41
+        set name "INTERNAL_TO_AWS_RKI"
+        set uuid 3c2ed05a-4a18-51ed-5b88-0d5d5e4bcb4e
+        set srcintf "any"
+        set dstintf "upg.zone.aws.rki"
+        set srcaddr "all"
+        set dstaddr "aws_rki"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 42
+        set name "AWS_RKI_TO_INTERNAL"
+        set uuid 6c78fe16-4a18-51ed-01ce-05060df3ffec
+        set srcintf "upg.zone.aws.rki"
+        set dstintf "any"
+        set srcaddr "aws_rki"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 21
+        set name "SSLVPN-ALL_STORE"
+        set uuid 838d2214-f684-51eb-eef5-b2617f42c021
+        set srcintf "ssl.root"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "ALL_STORE"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+        set groups "SSL-VPN"
+    next
+    edit 22
+        set name "SDWAN_TO_INTERNAL"
+        set uuid 74e1e522-f9d3-51eb-6d95-2dbc9df01474
+        set srcintf "upg-zone-wan.aws" "upg.zone.aws.rki"
+        set dstintf "any"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
+    edit 2
+        set name "Server_to_User (local lan)"
+        set uuid 932c102c-f1a7-51eb-5c48-ce96ee549287
+        set srcintf "IP_SERVER_VL30"
+        set dstintf "IP SERVER_VL10"
+        set srcaddr "SEGMENT SERVER"
+        set dstaddr "SEGMENT USER"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+    next
+    edit 4
+        set name "User_to_Server (local lan)"
+        set uuid 3cc89f56-f1a8-51eb-aa49-fe9a0a107e76
+        set srcintf "IP SERVER_VL10"
+        set dstintf "IP_SERVER_VL30"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of SERVER_T0_USER) (Reverse of SERVER_T0_USER)"
+    next
+    edit 24
+        set name "INTERNET_LA_PAJAK"
+        set uuid 71396ffc-550e-51ed-9981-9817e5755729
+        set srcintf "IP SERVER_VL10" "IP_SERVER_VL30"
+        set dstintf "upg-zone-wan"
+        set srcaddr "DC_JAMBI"
+        set dstaddr "wildcard.efaktur.pajak.go.id" "wildcard.pajak.go.id" "wildcard.svc.efaktur.pajak.go.id"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of INET-LA-ONLY-IT)"
+        set nat enable
+    next
+    edit 28
+        set name "INTERNET-LA-BCA"
+        set uuid ca77e114-b965-51ed-e64d-863935ec0972
+        set srcintf "IP SERVER_VL10" "IP_SERVER_VL30"
+        set dstintf "upg-zone-wan"
+        set srcaddr "DC_JAMBI"
+        set dstaddr "wilcard.klikbca.com" "wilcard.bca.co.id"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments "Khusus untuk BCA akses via LA"
+        set nat enable
+    next
+    edit 30
+        set name "INTERNET-SERVER"
+        set uuid 0e2e8284-24ff-51ec-848d-cf30547c1a7d
+        set srcintf "IP_SERVER_VL30"
+        set dstintf "upg-zone-lan3"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-A"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-A"
+        set logtraffic all
+        set comments " (Copy of INTERNET-POLICY-ALL)"
+        set nat enable
+    next
+    edit 13
+        set name "INTERNET-POLICY-IT"
+        set uuid 2256efc6-f1d8-51eb-d940-aff4b1eb238d
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-lan3"
+        set srcaddr "GROUP-IT"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set ips-sensor "default"
+        set logtraffic all
+        set nat enable
+    next
+    edit 19
+        set name "INTERNET-POLICY-A"
+        set uuid 7f8afbfc-1f3b-51ec-d68a-1db1344779ee
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-lan3"
+        set srcaddr "GROUP-A"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-A"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-A"
+        set logtraffic all
+        set comments " (Copy of RULES-POLICY-ALL)"
+        set nat enable
+    next
+    edit 31
+        set name "INTERNET-POLICY-D"
+        set uuid 75d1b138-3600-51ec-917d-baa38b6b9e18
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-lan3"
+        set srcaddr "GROUP-D"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-D"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-B"
+        set logtraffic all
+        set comments " (Copy of RULES-POLICY-ALL) (Copy of INTERNET-POLICY-A)"
+        set nat enable
+    next
+    edit 17
+        set name "INTERNET-POLICY-B"
+        set uuid a1a4d278-14a8-51ec-5379-92b905a89625
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-lan3"
+        set srcaddr "DC_JAMBI"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-B"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-B"
+        set logtraffic all
+        set comments " (Copy of User_Allow_All)"
+        set nat enable
+    next
+    edit 29
+        set name "INET-LA-ONLY-IT"
+        set uuid b38775d2-21a4-51ec-d13e-71bdb4427ddf
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-wan"
+        set srcaddr "GROUP-IT"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-All"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-All"
+        set nat enable
+    next
+    edit 37
+        set name "INET-LA-ONLY-USER"
+        set uuid f1e672d2-2dac-51ed-86a9-b23a29560b6d
+        set srcintf "IP SERVER_VL10"
+        set dstintf "upg-zone-wan"
+        set srcaddr "DC_JAMBI"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set av-profile "MBS_AV"
+        set webfilter-profile "MBS-Web-Filter-E"
+        set ips-sensor "default"
+        set application-list "MBS-App-Control-E"
+        set comments " (Copy of INET-LA-ONLY-IT)"
+        set nat enable
+    next
+    edit 32
+        set name "HUB-TO-SPOKE"
+        set uuid 6b8bf5c4-6217-51ec-2cc9-56830aec1990
+        set srcintf "IP_SERVER_VL30" "lan" "IP SERVER_VL10" "upg-zone-wan.aws" "lan1" "upg.zone.aws.rki"
+        set dstintf "JMB-IH" "JMB-LA" "BKS-SDWAN" "lan1"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of server to remote via sdwan)"
+    next
+    edit 33
+        set name "SPOKE-TO-HUB"
+        set uuid 8e0cab02-6217-51ec-cbfb-167bf3da63ce
+        set srcintf "JMB-IH" "JMB-LA" "BKS-SDWAN" "lan1"
+        set dstintf "IP_SERVER_VL30" "lan" "IP SERVER_VL10" "upg-zone-wan.aws" "lan1" "upg.zone.aws.rki"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of server to remote via sdwan) (Copy of HUB-TO-SPOKE) (Reverse of HUB-TO-SPOKE)"
+    next
+    edit 39
+        set name "BEKASI-TO-SPOKE"
+        set uuid 482aced2-47f1-51ed-4896-4ea4f4953d0d
+        set srcintf "BKS-SDWAN"
+        set dstintf "JMB-IH" "JMB-LA"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of server to remote via sdwan) (Copy of HUB-TO-SPOKE) (Reverse of HUB-TO-SPOKE) (Copy of SPOKE-TO-HUB)"
+    next
+    edit 40
+        set name "SPOKE-TO-BEKASI"
+        set uuid 6666e30e-47f1-51ed-84e4-f1caccba1b03
+        set srcintf "JMB-IH" "JMB-LA"
+        set dstintf "BKS-SDWAN"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set ssl-ssh-profile "certificate-inspection"
+        set comments " (Copy of server to remote via sdwan) (Copy of HUB-TO-SPOKE) (Reverse of HUB-TO-SPOKE) (Copy of SPOKE-TO-HUB) (Copy of BEKASI-TO-SPOKE) (Reverse of BEKASI-TO-SPOKE)"
+    next
+    edit 38
+        set name "SPOKE-TO_SPOKE"
+        set uuid 5f0a5b32-4723-51ed-2f32-622f196e1bb8
+        set srcintf "JMB-IH" "JMB-LA"
+        set dstintf "JMB-IH" "JMB-LA"
+        set srcaddr "all"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+    next
+end
+
+config system central-management
+    set type fortimanager
+    set serial-number "FMG3KGT220000044"
+    set fmg "202.152.25.234"
+end
+
+config system global
+    set alias "FGT40FTK20075025"
+    set gui-theme mariner
+    set hostname "2021264589_SURYA_PRATAMA_KERAMINDO"
+    set switch-controller enable
+    set timezone 53
+end
+
+config system admin
+    edit "cpelintasartassa"
+        set accprofile "super_admin"
+        set vdom "root"
+        set password L1nt4s4rt@_SSA!
+    next
+end
+
+config system snmp sysinfo
+    set status enable
+end
+config system snmp community
+    edit 1
+        set name "public"
+        config hosts
+            edit 1
+            next
+        end
+    next
+end
