@@ -10,11 +10,12 @@ def connect_to_router(router):
     ip = router["ip"]
     username = router["username"]
     password = router["password"]
+    ssh_port = router["ssh_port"]
 
     try:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh_client.connect(ip, username=username, password=password, port=3232)
+        ssh_client.connect(ip, username=username, password=password, port=ssh_port)
 
         # Sekarang Anda dapat melakukan sesuatu dengan perangkat,
         # seperti mengirimkan perintah melalui SSH, misalnya:
