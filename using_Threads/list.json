@@ -3,7 +3,8 @@
         {
             "ip": "192.168.1.99",
             "username": "admin",
-            "password": ""
+            "password": "",
+            "ssh_port": 3232
         }
     ]
 }
